@@ -7,6 +7,10 @@
     student_home: "/home/{{ student_user }}"
 
   tasks:
+    - name: Display warning about user reset
+      debug:
+        msg: "WARNING: This will completely remove and recreate the '{{ student_user }}' user, including all data!"
+
     - name: Check if student user exists
       getent:
         database: passwd
@@ -14,8 +18,19 @@
       register: student_exists
       failed_when: false
 
-    - name: Kill all processes owned by student user
-      shell: "pkill -u {{ student_user }} || true"
+    - name: Terminate user sessions gracefully
+      shell: "loginctl terminate-user {{ student_user }} || true"
+      when: student_exists is succeeded
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for processes to terminate
+      pause:
+        seconds: 3
+      when: student_exists is succeeded
+
+    - name: Force kill remaining processes (if any)
+      shell: "pkill -9 -u {{ student_user }} || true"
       when: student_exists is succeeded
       changed_when: false
 

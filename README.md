@@ -36,13 +36,19 @@ ansible-playbook provision.yml
 
 This will install all the required software and configure the system.
 
+### Run with custom WiFi credentials (recommended for security)
+
+```bash
+ansible-playbook provision.yml --extra-vars "wifi_password=YourSecurePassword"
+```
+
 ### Run the reset and provision playbook
 
 ```bash
 ansible-playbook reset_provision.yml
 ```
 
-This will reset the 'student' user and then provision all the software.
+**WARNING:** This will completely remove and recreate the 'student' user, including all their data!
 
 ### Dry run (check mode)
 
@@ -51,6 +57,22 @@ To see what changes would be made without actually making them:
 ```bash
 ansible-playbook provision.yml --check
 ```
+
+## Security Best Practices
+
+- **WiFi Credentials:** For production use, avoid hardcoding WiFi passwords in the playbook. Use:
+  - `--extra-vars` to pass credentials at runtime
+  - Ansible Vault to encrypt sensitive data
+  - Environment variables
+  
+  Example with Ansible Vault:
+  ```bash
+  # Create encrypted variables file
+  ansible-vault create secrets.yml
+  
+  # Run playbook with vault
+  ansible-playbook provision.yml --extra-vars "@secrets.yml" --ask-vault-pass
+  ```
 
 ## Configuration
 
@@ -64,6 +86,8 @@ ansible-playbook provision.yml --check
 - WiFi configuration requires NetworkManager to be installed
 - VSCode extensions are installed for the 'student' user
 - The reset playbook will completely remove and recreate the 'student' user
+- For production deployments, secure sensitive credentials using Ansible Vault
+- The playbooks gracefully handle situations where software is already installed
 
 ## Customization
 

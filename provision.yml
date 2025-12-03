@@ -8,6 +8,8 @@
       - golang.go
       - ms-python.python
       - dbaeumer.vscode-eslint
+    # SECURITY NOTE: For production, use Ansible Vault or --extra-vars to pass credentials
+    # Example: ansible-playbook provision.yml --extra-vars "wifi_password=YourSecurePassword"
     wifi_ssid: "CampusStMarc"
     wifi_password: "Thunderbolt"
     student_user: "student"
@@ -41,15 +43,23 @@
       register: golang_installed
 
     - name: Get latest Golang version
-      shell: curl -s https://go.dev/VERSION?m=text | head -1
-      register: golang_latest_version
+      uri:
+        url: https://go.dev/VERSION?m=text
+        return_content: yes
+        validate_certs: yes
+      register: golang_version_response
       changed_when: false
+      when: not golang_installed.stat.exists
+
+    - name: Set latest Golang version
+      set_fact:
+        golang_latest_version: "{{ golang_version_response.content.split('\n')[0] }}"
       when: not golang_installed.stat.exists
 
     - name: Download latest Golang
       get_url:
-        url: "https://go.dev/dl/{{ golang_latest_version.stdout }}.linux-amd64.tar.gz"
-        dest: "/tmp/{{ golang_latest_version.stdout }}.linux-amd64.tar.gz"
+        url: "https://go.dev/dl/{{ golang_latest_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/{{ golang_latest_version }}.linux-amd64.tar.gz"
         mode: '0644'
       when: not golang_installed.stat.exists
 
@@ -61,7 +71,7 @@
 
     - name: Extract Golang archive
       unarchive:
-        src: "/tmp/{{ golang_latest_version.stdout }}.linux-amd64.tar.gz"
+        src: "/tmp/{{ golang_latest_version }}.linux-amd64.tar.gz"
         dest: /usr/local
         remote_src: yes
       when: not golang_installed.stat.exists
@@ -88,15 +98,24 @@
         - "export PATH=$PATH:$GOPATH/bin"
 
     # Install VSCode
-    - name: Add Microsoft GPG key
-      apt_key:
+    - name: Download Microsoft GPG key
+      get_url:
         url: https://packages.microsoft.com/keys/microsoft.asc
-        state: present
+        dest: /tmp/microsoft.asc
+        mode: '0644'
+      when: ansible_os_family == "Debian"
+
+    - name: Add Microsoft GPG key to apt keyring
+      shell: |
+        gpg --dearmor < /tmp/microsoft.asc > /usr/share/keyrings/packages.microsoft.gpg
+        chmod 644 /usr/share/keyrings/packages.microsoft.gpg
+      args:
+        creates: /usr/share/keyrings/packages.microsoft.gpg
       when: ansible_os_family == "Debian"
 
     - name: Add VSCode repository
       apt_repository:
-        repo: "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main"
         state: present
         filename: vscode
       when: ansible_os_family == "Debian"
@@ -152,12 +171,16 @@
         state: present
 
     # WiFi Configuration
-    - name: Remove all existing WiFi connections
-      shell: |
-        for conn in $(nmcli -t -f NAME con show | grep -v "Wired"); do
-          nmcli con delete "$conn" || true
-        done
+    - name: Get list of existing WiFi connections
+      shell: "nmcli -t -f NAME,TYPE con show | grep ':802-11-wireless$' | cut -d: -f1"
+      register: existing_wifi_connections
       changed_when: false
+      failed_when: false
+
+    - name: Remove existing WiFi connections
+      shell: "nmcli con delete '{{ item }}'"
+      loop: "{{ existing_wifi_connections.stdout_lines }}"
+      when: existing_wifi_connections.stdout_lines | length > 0
       failed_when: false
 
     - name: Configure WiFi connection for CampusStMarc
