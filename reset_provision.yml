@@ -1,0 +1,67 @@
+---
+- name: Reset user student
+  hosts: localhost
+  become: yes
+  vars:
+    student_user: "student"
+    student_home: "/home/{{ student_user }}"
+
+  tasks:
+    - name: Check if student user exists
+      getent:
+        database: passwd
+        key: "{{ student_user }}"
+      register: student_exists
+      failed_when: false
+
+    - name: Kill all processes owned by student user
+      shell: "pkill -u {{ student_user }} || true"
+      when: student_exists is succeeded
+      changed_when: false
+
+    - name: Remove student user home directory
+      file:
+        path: "{{ student_home }}"
+        state: absent
+      when: student_exists is succeeded
+
+    - name: Remove student user
+      user:
+        name: "{{ student_user }}"
+        state: absent
+        remove: yes
+      when: student_exists is succeeded
+
+    - name: Create fresh student user
+      user:
+        name: "{{ student_user }}"
+        state: present
+        shell: /bin/bash
+        createhome: yes
+        home: "{{ student_home }}"
+
+    - name: Set password for student user (optional - change as needed)
+      user:
+        name: "{{ student_user }}"
+        password: "{{ 'student' | password_hash('sha512') }}"
+        update_password: always
+
+    - name: Create standard directories for student
+      file:
+        path: "{{ student_home }}/{{ item }}"
+        state: directory
+        owner: "{{ student_user }}"
+        group: "{{ student_user }}"
+        mode: '0755'
+      loop:
+        - Desktop
+        - Documents
+        - Downloads
+        - Pictures
+
+    - name: Display reset completion message
+      debug:
+        msg: "User '{{ student_user }}' has been reset successfully."
+
+# Import the provisioning playbook
+- import_playbook: provision.yml
