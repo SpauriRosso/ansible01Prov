@@ -1,0 +1,22 @@
+# Ansible
+*.retry
+.ansible/
+/tmp/ansible_facts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

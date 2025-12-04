@@ -1,0 +1,197 @@
+---
+- name: Provision system with required software
+  hosts: localhost
+  become: yes
+  vars:
+    golang_version: "1.23.4"  # Update this to the latest version as needed
+    vscode_extensions:
+      - golang.go
+      - ms-python.python
+      - dbaeumer.vscode-eslint
+    # SECURITY NOTE: For production, use Ansible Vault or --extra-vars to pass credentials
+    # Example: ansible-playbook provision.yml --extra-vars "wifi_password=YourSecurePassword"
+    wifi_ssid: "CampusStMarc"
+    wifi_password: "Thunderbolt"
+    student_user: "student"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    # Install prerequisites
+    - name: Install required packages
+      apt:
+        name:
+          - wget
+          - curl
+          - git
+          - build-essential
+          - network-manager
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+        state: present
+      when: ansible_os_family == "Debian"
+
+    # Install latest Golang from official website
+    - name: Check if Golang is already installed
+      stat:
+        path: /usr/local/go/bin/go
+      register: golang_installed
+
+    - name: Get latest Golang version
+      uri:
+        url: https://go.dev/VERSION?m=text
+        return_content: yes
+        validate_certs: yes
+      register: golang_version_response
+      changed_when: false
+      when: not golang_installed.stat.exists
+
+    - name: Set latest Golang version
+      set_fact:
+        golang_latest_version: "{{ golang_version_response.content.split('\n')[0] }}"
+      when: not golang_installed.stat.exists
+
+    - name: Download latest Golang
+      get_url:
+        url: "https://go.dev/dl/{{ golang_latest_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/{{ golang_latest_version }}.linux-amd64.tar.gz"
+        mode: '0644'
+      when: not golang_installed.stat.exists
+
+    - name: Remove old Golang installation
+      file:
+        path: /usr/local/go
+        state: absent
+      when: not golang_installed.stat.exists
+
+    - name: Extract Golang archive
+      unarchive:
+        src: "/tmp/{{ golang_latest_version }}.linux-amd64.tar.gz"
+        dest: /usr/local
+        remote_src: yes
+      when: not golang_installed.stat.exists
+
+    - name: Add Golang to PATH in /etc/profile.d
+      copy:
+        content: |
+          export PATH=$PATH:/usr/local/go/bin
+          export GOPATH=$HOME/go
+          export PATH=$PATH:$GOPATH/bin
+        dest: /etc/profile.d/golang.sh
+        mode: '0644'
+
+    - name: Add Golang to PATH for student user
+      lineinfile:
+        path: "/home/{{ student_user }}/.bashrc"
+        line: "{{ item }}"
+        create: yes
+        owner: "{{ student_user }}"
+        group: "{{ student_user }}"
+      loop:
+        - "export PATH=$PATH:/usr/local/go/bin"
+        - "export GOPATH=$HOME/go"
+        - "export PATH=$PATH:$GOPATH/bin"
+
+    # Install VSCode
+    - name: Download Microsoft GPG key
+      get_url:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        dest: /tmp/microsoft.asc
+        mode: '0644'
+      when: ansible_os_family == "Debian"
+
+    - name: Add Microsoft GPG key to apt keyring
+      shell: |
+        gpg --dearmor < /tmp/microsoft.asc > /usr/share/keyrings/packages.microsoft.gpg
+        chmod 644 /usr/share/keyrings/packages.microsoft.gpg
+      args:
+        creates: /usr/share/keyrings/packages.microsoft.gpg
+      when: ansible_os_family == "Debian"
+
+    - name: Add VSCode repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main"
+        state: present
+        filename: vscode
+      when: ansible_os_family == "Debian"
+
+    - name: Install VSCode
+      apt:
+        name: code
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install VSCode extensions for student user
+      become_user: "{{ student_user }}"
+      command: "code --install-extension {{ item }}"
+      loop: "{{ vscode_extensions }}"
+      register: vscode_ext_result
+      changed_when: "'already installed' not in vscode_ext_result.stdout"
+      failed_when: false
+
+    # Install Chrome
+    - name: Download Google Chrome
+      get_url:
+        url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        dest: /tmp/google-chrome-stable_current_amd64.deb
+        mode: '0644'
+
+    - name: Install Google Chrome
+      apt:
+        deb: /tmp/google-chrome-stable_current_amd64.deb
+        state: present
+      when: ansible_os_family == "Debian"
+
+    # Install Node.js via npm (installing nodejs which includes npm)
+    - name: Install Node.js and npm
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Update npm to latest version
+      npm:
+        name: npm
+        global: yes
+        state: latest
+
+    # Install @conotion/cli via npm
+    - name: Install @conotion/cli globally
+      npm:
+        name: "@conotion/cli"
+        global: yes
+        state: present
+
+    # WiFi Configuration
+    - name: Get list of existing WiFi connections
+      shell: "nmcli -t -f NAME,TYPE con show | grep ':802-11-wireless$' | cut -d: -f1"
+      register: existing_wifi_connections
+      changed_when: false
+      failed_when: false
+
+    - name: Remove existing WiFi connections
+      shell: "nmcli con delete '{{ item }}'"
+      loop: "{{ existing_wifi_connections.stdout_lines }}"
+      when: existing_wifi_connections.stdout_lines | length > 0
+      failed_when: false
+
+    - name: Configure WiFi connection for CampusStMarc
+      shell: |
+        nmcli con add type wifi ifname wlan0 con-name "{{ wifi_ssid }}" ssid "{{ wifi_ssid }}" || true
+        nmcli con modify "{{ wifi_ssid }}" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{{ wifi_password }}"
+        nmcli con up "{{ wifi_ssid }}" || true
+      register: wifi_config
+      changed_when: "'successfully activated' in wifi_config.stdout"
+      failed_when: false
+
+    - name: Display completion message
+      debug:
+        msg: "Provisioning complete! Golang, VSCode, Chrome, Node.js, and @conotion/cli have been installed. WiFi configured."
