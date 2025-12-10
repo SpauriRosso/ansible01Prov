@@ -3,7 +3,7 @@
   hosts: localhost
   become: true
   vars_files:
-    - ./01Prov.yml
+    - ./vars.yml
 
   tasks:
     - name: Update apt cache
