@@ -3,7 +3,7 @@
   hosts: localhost
   become: true
   vars_files:
-    - ./01Prov.yml
+    - ./vars.yml
 
   tasks:
     - name: Update apt cache
@@ -24,7 +24,7 @@
           - ca-certificates
           - gnupg
         state: present
-      when: ansible_os_family = "Debian"
+      when: ansible_os_family == "Debian"
 
     - name: Check if golang is installed
       ansible.builtin.stat:
@@ -80,7 +80,7 @@
         mode: "0644"
         line: "{{ item }}"
         create: true
-        owner: "{{ stdudent_user }}"
+        owner: "{{ student_user }}"
         group: "{{ student_user }}"
       loop:
         - "export PATH=$PATH:/usr/local/go/bin"
@@ -105,7 +105,7 @@
 
     - name: Add VSCode repository
       ansible.builtin.apt_repository:
-        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main"
+        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main
         state: present
         filename: vscode
       when: ansible_os_family == "Debian"
