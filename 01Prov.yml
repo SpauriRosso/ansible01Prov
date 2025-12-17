@@ -256,12 +256,6 @@
       args:
         creates: "/home/{{ student_user }}/.nvm/alias"
 
-    - name: Update npm to latest version
-      community.general.npm:
-        name: npm
-        global: true
-        state: latest
-
     # @conotion/cli
     - name: Install @conotion/cli globally
       become: true
