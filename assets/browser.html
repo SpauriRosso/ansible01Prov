@@ -11,7 +11,8 @@
     <style>
         /* --- VARIABLES --- */
         :root {
-            --glass-bg: rgba(20, 20, 20, 0.3);
+            /* Fond en verre légèrement plus sombre pour ce wallpaper clair */
+            --glass-bg: rgba(20, 20, 20, 0.4);
             --glass-border: rgba(255, 255, 255, 0.1);
             --glass-hover: rgba(255, 255, 255, 0.2);
             --text-color: #ffffff;
@@ -34,14 +35,14 @@
             align-items: center;
             justify-content: center;
             color: var(--text-color);
-            background-color: #111;
+            
+            /* --- NOUVEAU WALLPAPER IMGUR --- */
+            /* Utilisation du lien direct (.jpeg) et non du lien d'album */
+            background: url('https://i.imgur.com/WFMtScn.png') no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            transition: background-image 0.5s ease-in-out;
         }
 
-        /* Voile noir léger pour garantir la lisibilité du texte sur n'importe quelle image */
+        /* Voile sombre léger pour la lisibilité */
         body::before {
             content: '';
             position: absolute;
@@ -61,7 +62,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- CONTAINER PRINCIPAL --- */
+        /* --- CONTAINER --- */
         .main-container {
             display: flex;
             flex-direction: column;
@@ -106,7 +107,7 @@
             color: white;
             font-size: 1.1rem;
             margin-left: 15px;
-            font-weight: 300; /* Texte de recherche fin aussi */
+            font-weight: 300;
         }
         
         .search-input::placeholder { color: rgba(255, 255, 255, 0.5); }
@@ -167,7 +168,7 @@
 
         .bookmark-name {
             font-size: 0.85rem;
-            font-weight: 300; /* LIGHT : C'est ici que ça se joue */
+            font-weight: 300; /* Light */
             opacity: 0.9;
             text-shadow: 0 2px 4px rgba(0,0,0,0.6);
             letter-spacing: 0.5px;
@@ -177,7 +178,6 @@
         .footer-logo {
             position: absolute;
             bottom: 30px;
-            /* Animation douce d'apparition */
             animation: fadeInLogo 1.5s ease forwards;
             opacity: 0;
         }
@@ -189,9 +189,8 @@
 
         .footer-logo img {
             display: block;
-            width: 160px; /* Taille demandée */
+            width: 160px;
             height: auto;
-            /* Aucun filtre, rendu brut comme demandé */
         }
 
     </style>
@@ -217,7 +216,6 @@
     </div>
 
     <script>
-        // CONFIGURATION
         const bookmarksData = [
             { name: "Plateforme", url: "https://zone01normandie.org" },
             { name: "Emargement", url: "https://emargement.zone01normandie.org/" },
@@ -226,7 +224,6 @@
             { name: "Conotion",   url: "https://conotion.ai" }
         ];
 
-        // RENDU BOOKMARKS
         function renderBookmarks() {
             const container = document.getElementById('bookmarks-container');
             
@@ -234,7 +231,7 @@
                 const item = document.createElement('a');
                 item.href = site.url;
                 item.className = 'bookmark-item';
-                // Délai d'apparition
+                // Animation en cascade
                 item.style.animation = `fadeIn 0.6s ease forwards ${index * 0.1}s`;
                 item.style.opacity = '0';
 
@@ -258,32 +255,7 @@
             });
         }
 
-        // BACKGROUND ALEATOIRE (UNSPLASH/PICSUM)
-        function setRandomWallpaper() {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            // On ajoute un timestamp pour forcer le rafraichissement de l'image
-            const timestamp = new Date().getTime();
-            
-            // Note : L'API source.unsplash.com est parfois instable. 
-            // J'utilise ici picsum avec seed aléatoire qui est très rapide et fiable pour la démo.
-            // Si tu veux strictement Unsplash, remplace l'URL ci-dessous par :
-            // `https://source.unsplash.com/random/${width}x${height}/?abstract,nature&t=${timestamp}`
-            
-            const imageUrl = `https://picsum.photos/${width}/${height}?random=${timestamp}`;
-
-            // Préchargement de l'image pour éviter le clignotement noir
-            const img = new Image();
-            img.src = imageUrl;
-            img.onload = () => {
-                document.body.style.backgroundImage = `url('${imageUrl}')`;
-            };
-        }
-
-        // INIT
         renderBookmarks();
-        setRandomWallpaper();
-
     </script>
 </body>
 </html>
