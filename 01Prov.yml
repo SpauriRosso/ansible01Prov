@@ -264,10 +264,16 @@
 
     # @conotion/cli
     - name: Install @conotion/cli globally
-      community.general.npm:
-        name: "@conotion/cli"
-        global: true
-        state: present
+      become: true
+      become_user: "{{ student_user }}"
+      ansible.builtin.shell: |
+        set -euo pipefail
+        export NVM_DIR="$HOME/.nvm"
+        . "$NVM_DIR/nvm.sh"
+        npm install -g @conotion/cli
+      args:
+        executable: /bin/bash
+      changed_when: true
 
     # Wifi Configuration
     - name: Get list of existing wifi connections
