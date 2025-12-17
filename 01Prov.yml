@@ -145,6 +145,8 @@
     - name: Check if Chrome managed policy exists
       ansible.builtin.file:
         path: /etc/opt/chrome/policies/managed
+        state: directory
+        mode: "0755"
 
     - name: Force install uBlock + start packages
       ansible.builtin.copy:
@@ -196,6 +198,12 @@
           }
 
     # Browsers customization:: Both
+    - name: Ensure browser start directory exists
+      ansible.builtin.file:
+        path: /usr/local/share/browser-start
+        state: directory
+        mode: "0755"
+
     - name: Deploy custom start page
       ansible.builtin.copy:
         src: assets/browser.html
@@ -270,6 +278,23 @@
       changed_when: true
 
     # Wifi Configuration
+    - name: Detect wifi interfaces
+      ansible.builtin.shell: |
+        set -o pipefail
+        nmcli -t -f DEVICE,TYPE device status \
+        | awk -F: '$2 == "wifi" { print $1 }'
+      register: wifi_interfaces
+      changed_when: false
+
+    - name: Fail if no wifi interface is found
+      ansible.builtin.fail:
+        msg: "Aucune interface Wi-Fi détectée via nmcli"
+      when: wifi_interfaces.stdout_lines | length == 0
+
+    - name: Select wifi interface
+      ansible.builtin.set_fact:
+        wifi_interface: "{{ wifi_interfaces.stdout_lines[0] }}"
+
     - name: Get list of existing wifi connections
       ansible.builtin.shell: |
         set -o pipefail
@@ -290,7 +315,7 @@
 
     - name: Configure wifi on campus
       ansible.builtin.shell: |
-        nmcli con add type wifi ifname wlan0 con-name "{{ wifi_ssid }}" ssid "{{ wifi_ssid }}" || true
+        nmcli con add type wifi ifname "{{ wifi_interface }}" con-name "{{ wifi_ssid }}" ssid "{{ wifi_ssid }}" || true
         nmcli con modify "{{ wifi_ssid }}" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{{ wifi_password }}"
         nmcli con up "{{ wifi_ssid }}" || true
       register: wifi_config
