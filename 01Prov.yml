@@ -155,11 +155,11 @@
         content: |
           {
             "ExtensionInstallForcelist": [
-              "cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx"
+              "epcnnfbjfcgphgdmggkamkmgojdagdnn;https://clients2.google.com/service/update2/crx"
             ],
             "ExtensionSettings": {
               "*": { "installation_mode": "allowed" },
-              "cjpalhdlnbpafiamejdnhcphjbkeiagm": {
+              "epcnnfbjfcgphgdmggkamkmgojdagdnn": {
                 "installation_mode": "force_installed",
                 "update_url": "https://clients2.google.com/service/update2/crx"
               }
@@ -194,12 +194,12 @@
                 }
               },
               "Homepage": {
-                "URL": "file:///usr/local/share/browser-start/browser.html",
+                "URL": "file:///var/snap/firefox/common/browser-start/browser.html",
                 "StartPage": "homepage",
-                "Additional": [ "file:///usr/local/share/browser-start/browser.html" ]
+                "Additional": [ "file:///var/snap/firefox/common/browser-start/browser.html" ]
               },
               "NewTabPage": {
-                "URL": "file:///usr/local/share/browser-start/browser.html"
+                "URL": "file:///var/snap/firefox/common/browser-start/browser.html"
               }
             }
           }
@@ -224,12 +224,12 @@
                 }
               },
               "Homepage": {
-                "URL": "file:///usr/local/share/browser-start/browser.html",
+                "URL": "file:///var/snap/firefox/common/browser-start/browser.html",
                 "StartPage": "homepage",
-                "Additional": [ "file:///usr/local/share/browser-start/browser.html" ]
+                "Additional": [ "file:///var/snap/firefox/common/browser-start/browser.html" ]
               },
               "NewTabPage": {
-                "URL": "file:///usr/local/share/browser-start/browser.html"
+                "URL": "file:///var/snap/firefox/common/browser-start/browser.html"
               }
             }
           }
@@ -245,6 +245,18 @@
       ansible.builtin.copy:
         src: assets/browser.html
         dest: /usr/local/share/browser-start/browser.html
+        mode: "0644"
+
+    - name: Ensure Firefox snap start directory exists
+      ansible.builtin.file:
+        path: /var/snap/firefox/common/browser-start
+        state: directory
+        mode: "0755"
+
+    - name: Deploy custom start page for Firefox snap
+      ansible.builtin.copy:
+        src: assets/browser.html
+        dest: /var/snap/firefox/common/browser-start/browser.html
         mode: "0644"
 
 
@@ -328,6 +340,8 @@
         | awk -F: '$2 == "wifi" { print $1 }'
       register: wifi_interfaces
       changed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Fail if no wifi interface is found
       ansible.builtin.fail:
@@ -346,6 +360,8 @@
       register: existing_wifi_connections
       changed_when: false
       failed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Remove existing wifi connections
       ansible.builtin.shell: |
