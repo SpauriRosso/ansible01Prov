@@ -219,6 +219,33 @@
       changed_when: "'successfully activated' in wifi_config.stdout"
       failed_when: false
 
+    # Plymouth
+    - name: Ensure Plymouth themes are present
+      ansible.builtin.apt:
+        name: plymouth-themes
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Replace Plymouth logos
+      ansible.builtin.copy:
+        src: assets/01logo.png
+        dest: "{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - /usr/share/plymouth/themes/ubuntu-logo/logo/.png
+        - /usr/share/plymouth/themes/ubuntu-logo/ubuntu-logo.png
+
+    - name: Kepp default Plymouth theme
+      ansible.builtin.command: plymouth-set-default-theme ubuntu-logo
+      register: plymouth-themes
+      changed_when: "'ubuntu-logo' not in plymouth_theme.stdout"
+
+    - name: Update initramfs to apply splash
+      ansible.builtin.command: update-initframfs -u
+      when: plymouth-themes is changed
+
     - name: Display completion message
       ansible.builtin.debug:
         msg: " Provisioning complete! "
