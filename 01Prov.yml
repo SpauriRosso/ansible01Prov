@@ -466,11 +466,35 @@
       failed_when: false
 
     # Plymouth
+    - name: Install Plymouth
+      ansible.builtin.apt:
+        name: plymouth
+        state: present
+      when: ansible_os_family == "Debian"
+
     - name: Ensure Plymouth themes are present
       ansible.builtin.apt:
         name: plymouth-themes
         state: present
       when: ansible_os_family == "Debian"
+
+    - name: Resolve Plymouth logo source
+      ansible.builtin.set_fact:
+        plymouth_logo_src: "{{ lookup('first_found', params) }}"
+      vars:
+        params:
+          files:
+            - assets/01Logo.png
+            - assets/01logo.png
+          skip: true
+      when: ansible_os_family == "Debian"
+
+    - name: Fail if Plymouth logo is missing
+      ansible.builtin.fail:
+        msg: "Plymouth logo not found"
+      when:
+        - ansible_os_family == "Debian"
+        - plymouth_logo_src is not defined or plymouth_logo_src == ""
 
     - name: Find ubuntu-logo PNGs in theme dir
       ansible.builtin.find:
@@ -484,7 +508,7 @@
 
     - name: Replace Plymouth ubuntu-logo PNGs with custom logo
       ansible.builtin.copy:
-        src: assets/01logo.png
+        src: "{{ plymouth_logo_src }}"
         dest: "{{ item.path }}"
         owner: root
         group: root
