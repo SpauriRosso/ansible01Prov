@@ -643,99 +643,44 @@
       failed_when: false
 
     # Plymouth
-    - name: Install Plymouth
+    # Plymouth
+    - name: Install Plymouth and themes
       ansible.builtin.apt:
-        name: plymouth
+        name:
+          - plymouth
+          - plymouth-themes
         state: present
       when: ansible_os_family == "Debian"
 
-    - name: Ensure Plymouth themes are present
-      ansible.builtin.apt:
-        name: plymouth-themes
-        state: present
+    - name: Ensure Plymouth spinner theme directory exists
+      ansible.builtin.file:
+        path: /usr/share/plymouth/themes/spinner
+        state: directory
+        mode: '0755'
       when: ansible_os_family == "Debian"
 
-    - name: Resolve Plymouth logo source
-      ansible.builtin.set_fact:
-        plymouth_logo_src: "{{ lookup('first_found', params) }}"
-      vars:
-        params:
-          files:
-            - assets/01Logo.png
-            - assets/01logo.png
-          skip: true
-      when: ansible_os_family == "Debian"
-
-    - name: Fail if Plymouth logo is missing
-      ansible.builtin.fail:
-        msg: "Plymouth logo not found"
-      when:
-        - ansible_os_family == "Debian"
-        - plymouth_logo_src is not defined or plymouth_logo_src == ""
-
-    - name: Check plymouth-set-default-theme in /usr/sbin
-      ansible.builtin.stat:
-        path: /usr/sbin/plymouth-set-default-theme
-      register: plymouth_set_sbin
-      when: ansible_os_family == "Debian"
-
-    - name: Check plymouth-set-default-theme in /usr/bin
-      ansible.builtin.stat:
-        path: /usr/bin/plymouth-set-default-theme
-      register: plymouth_set_bin
-      when: ansible_os_family == "Debian"
-
-    - name: Set plymouth-set-default-theme path
-      ansible.builtin.set_fact:
-        plymouth_set_cmd: >-
-          {{ '/usr/sbin/plymouth-set-default-theme' if plymouth_set_sbin.stat.exists
-             else '/usr/bin/plymouth-set-default-theme' if plymouth_set_bin.stat.exists
-             else '' }}
-      when: ansible_os_family == "Debian"
-
-    - name: Fail if plymouth-set-default-theme is missing
-      ansible.builtin.fail:
-        msg: "plymouth-set-default-theme not found; install the plymouth package."
-      when:
-        - ansible_os_family == "Debian"
-        - plymouth_set_cmd | length == 0
-
-    - name: Find ubuntu-logo PNGs in theme dir
-      ansible.builtin.find:
-        paths: /usr/share/plymouth
-        patterns: "ubuntu-logo*.png"
-        recurse: true
-        file_type: file
-      register: plymouth_logo_files
-      changed_when: false
-      when: ansible_os_family == "Debian"
-
-    - name: Replace Plymouth ubuntu-logo PNGs with custom logo
+    - name: Deploy custom 01Rouen logo to Spinner theme
       ansible.builtin.copy:
-        src: "{{ plymouth_logo_src }}"
-        dest: "{{ item.path }}"
+        src: assets/01logo.png
+        dest: /usr/share/plymouth/themes/spinner/watermark.png
         owner: root
         group: root
         mode: "0644"
-      loop: "{{ plymouth_logo_files.files }}"
-      when:
-        - ansible_os_family == "Debian"
-        - plymouth_logo_files.matched | int > 0
+      when: ansible_os_family == "Debian"
       notify: Rebuild initramfs
 
-    - name: Get current Plymouth theme
-      ansible.builtin.command: "{{ plymouth_set_cmd }}"
-      register: plymouth_current
+    - name: Check current Plymouth theme
+      ansible.builtin.command: plymouth-set-default-theme
+      register: current_theme
       changed_when: false
       when: ansible_os_family == "Debian"
 
-    - name: Set Plymouth theme to ubuntu-logo (if needed)
-      ansible.builtin.command: "{{ plymouth_set_cmd }} ubuntu-logo"
-      register: plymouth_set
+    - name: Set Plymouth default theme to spinner
+      ansible.builtin.command: plymouth-set-default-theme spinner
       changed_when: true
       when:
         - ansible_os_family == "Debian"
-        - (plymouth_current.stdout | trim) != "ubuntu-logo"
+        - current_theme.stdout != "spinner"
       notify: Rebuild initramfs
 
     # Completed
