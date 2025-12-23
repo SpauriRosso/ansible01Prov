@@ -496,23 +496,32 @@
         - ansible_os_family == "Debian"
         - plymouth_logo_src is not defined or plymouth_logo_src == ""
 
-    - name: Locate plymouth-set-default-theme binary
+    - name: Check plymouth-set-default-theme in /usr/sbin
+      ansible.builtin.stat:
+        path: /usr/sbin/plymouth-set-default-theme
+      register: plymouth_set_sbin
+      when: ansible_os_family == "Debian"
+
+    - name: Check plymouth-set-default-theme in /usr/bin
+      ansible.builtin.stat:
+        path: /usr/bin/plymouth-set-default-theme
+      register: plymouth_set_bin
+      when: ansible_os_family == "Debian"
+
+    - name: Set plymouth-set-default-theme path
       ansible.builtin.set_fact:
-        plymouth_set_cmd: "{{ lookup('first_found', params) }}"
-      vars:
-        params:
-          files:
-            - /usr/sbin/plymouth-set-default-theme
-            - /usr/bin/plymouth-set-default-theme
-          skip: true
+        plymouth_set_cmd: >-
+          {{ '/usr/sbin/plymouth-set-default-theme' if plymouth_set_sbin.stat.exists
+             else '/usr/bin/plymouth-set-default-theme' if plymouth_set_bin.stat.exists
+             else '' }}
       when: ansible_os_family == "Debian"
 
     - name: Fail if plymouth-set-default-theme is missing
       ansible.builtin.fail:
-        msg: "plymouth-set-default-theme not found"
+        msg: "plymouth-set-default-theme not found; install the plymouth package."
       when:
         - ansible_os_family == "Debian"
-        - plymouth_set_cmd is not defined or plymouth_set_cmd == ""
+        - plymouth_set_cmd | length == 0
 
     - name: Find ubuntu-logo PNGs in theme dir
       ansible.builtin.find:
