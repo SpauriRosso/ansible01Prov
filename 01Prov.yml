@@ -258,6 +258,98 @@
         - 'export RUSTUP_HOME="$HOME/.rustup"'
         - 'export PATH="$CARGO_HOME/bin:$PATH"'
 
+    # JetBrains IDEs
+    - name: Ensure JetBrains dirs exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /opt/jetbrains
+        - /opt/jetbrains/idea
+        - /opt/jetbrains/goland
+        - /opt/jetbrains/webstorm
+        - /tmp/jetbrains
+      when: ansible_os_family == "Debian"
+
+    - name: Download JetBrains IDEA Ultimate
+      ansible.builtin.get_url:
+        url: https://download.jetbrains.com/product?code=IIU&latest&distribution=linux
+        dest: /tmp/jetbrains/idea.tar.gz
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Extract JetBrains IDEA Ultimate
+      ansible.builtin.unarchive:
+        src: /tmp/jetbrains/idea.tar.gz
+        dest: /opt/jetbrains/idea
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+      args:
+        creates: /opt/jetbrains/idea/bin/idea.sh
+      when: ansible_os_family == "Debian"
+
+    - name: Link idea CLI
+      ansible.builtin.file:
+        src: /opt/jetbrains/idea/bin/idea.sh
+        dest: /usr/local/bin/idea
+        state: link
+        force: true
+      when: ansible_os_family == "Debian"
+
+    - name: Download JetBrains GoLand
+      ansible.builtin.get_url:
+        url: https://download.jetbrains.com/product?code=GO&latest&distribution=linux
+        dest: /tmp/jetbrains/goland.tar.gz
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Extract JetBrains GoLand
+      ansible.builtin.unarchive:
+        src: /tmp/jetbrains/goland.tar.gz
+        dest: /opt/jetbrains/goland
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+      args:
+        creates: /opt/jetbrains/goland/bin/goland.sh
+      when: ansible_os_family == "Debian"
+
+    - name: Link goland CLI
+      ansible.builtin.file:
+        src: /opt/jetbrains/goland/bin/goland.sh
+        dest: /usr/local/bin/goland
+        state: link
+        force: true
+      when: ansible_os_family == "Debian"
+
+    - name: Download JetBrains WebStorm
+      ansible.builtin.get_url:
+        url: https://download.jetbrains.com/product?code=WS&latest&distribution=linux
+        dest: /tmp/jetbrains/webstorm.tar.gz
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Extract JetBrains WebStorm
+      ansible.builtin.unarchive:
+        src: /tmp/jetbrains/webstorm.tar.gz
+        dest: /opt/jetbrains/webstorm
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+      args:
+        creates: /opt/jetbrains/webstorm/bin/webstorm.sh
+      when: ansible_os_family == "Debian"
+
+    - name: Link webstorm CLI
+      ansible.builtin.file:
+        src: /opt/jetbrains/webstorm/bin/webstorm.sh
+        dest: /usr/local/bin/webstorm
+        state: link
+        force: true
+      when: ansible_os_family == "Debian"
+
     # VSCODE
     - name: Download Microsoft GPG key
       ansible.builtin.get_url:
@@ -514,7 +606,7 @@
 
     - name: Fail if no wifi interface is found
       ansible.builtin.fail:
-        msg: "Aucune interface Wi-Fi détectée via nmcli"
+        msg: "No Wi-Fi interface detected via nmcli"
       when: wifi_interfaces.stdout_lines | length == 0
 
     - name: Select wifi interface
