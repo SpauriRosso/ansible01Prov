@@ -666,7 +666,15 @@
         group: root
         mode: "0644"
       when: ansible_os_family == "Debian"
-      notify: Rebuild initramfs
+
+    - name: Deploy custom 01Rouen logo to legacy ubuntu-logo path
+      ansible.builtin.copy:
+        src: assets/01logo.png
+        dest: /usr/share/plymouth/ubuntu-logo.png
+        owner: root
+        group: root
+        mode: "0644"
+      when: ansible_os_family == "Debian"
 
     - name: Check current Plymouth theme
       ansible.builtin.command: /usr/sbin/plymouth-set-default-theme
@@ -682,7 +690,11 @@
         - ansible_os_family == "Debian"
         - current_theme.rc == 0
         - current_theme.stdout != "spinner"
-      notify: Rebuild initramfs
+
+    - name: Force Rebuild initramfs (Always)
+      ansible.builtin.command: update-initramfs -u
+      changed_when: true
+      when: ansible_os_family == "Debian"
 
     # Completed
     - name: Display completion message
@@ -690,8 +702,8 @@
         msg: " Provisioning complete! "
 
   # Handlers
-  handlers:
-    - name: Rebuild initramfs
-      ansible.builtin.command: update-initramfs -u
-      changed_when: true
-      when: ansible_os_family == "Debian"
+  # handlers:
+  #   - name: Rebuild initramfs
+  #     ansible.builtin.command: update-initramfs -u
+  #     changed_when: true
+  #     when: ansible_os_family == "Debian"
