@@ -173,6 +173,91 @@
         - "export GOPATH=$HOME/go"
         - "export PATH=$PATH:$GOPATH/bin"
 
+    # Java (Temurin)
+    - name: Ensure JDK install dir exists
+      ansible.builtin.file:
+        path: /usr/lib/jvm/temurin-21
+        state: directory
+        mode: "0755"
+      when: ansible_os_family == "Debian"
+
+    - name: Download Temurin JDK 21
+      ansible.builtin.get_url:
+        url: https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse
+        dest: /tmp/temurin-jdk.tar.gz
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Extract Temurin JDK
+      ansible.builtin.unarchive:
+        src: /tmp/temurin-jdk.tar.gz
+        dest: /usr/lib/jvm/temurin-21
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+      args:
+        creates: /usr/lib/jvm/temurin-21/bin/java
+      when: ansible_os_family == "Debian"
+
+    - name: Set JAVA_HOME globally
+      ansible.builtin.copy:
+        dest: /etc/profile.d/java.sh
+        mode: "0644"
+        content: |
+          export JAVA_HOME=/usr/lib/jvm/temurin-21
+          export PATH=$JAVA_HOME/bin:$PATH
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure JAVA_HOME for student
+      ansible.builtin.lineinfile:
+        path: "/home/{{ student_user }}/.bashrc"
+        mode: "0644"
+        line: "{{ item }}"
+        create: true
+        owner: "{{ student_user }}"
+        group: "{{ student_user }}"
+      loop:
+        - "export JAVA_HOME=/usr/lib/jvm/temurin-21"
+        - "export PATH=$JAVA_HOME/bin:$PATH"
+      when: ansible_os_family == "Debian"
+
+    # Rust
+    - name: Ensure rustup temp dir exists
+      ansible.builtin.file:
+        path: /tmp/rust
+        state: directory
+        mode: "0755"
+
+    - name: Download rustup installer
+      ansible.builtin.get_url:
+        url: https://sh.rustup.rs
+        dest: /tmp/rust/rustup-init.sh
+        mode: "0755"
+
+    - name: Install Rust toolchain
+      become: true
+      become_user: "{{ student_user }}"
+      ansible.builtin.shell: |
+        export CARGO_HOME="$HOME/.cargo"
+        export RUSTUP_HOME="$HOME/.rustup"
+        sh /tmp/rust/rustup-init.sh -y --no-modify-path --profile minimal
+      args:
+        creates: "/home/{{ student_user }}/.cargo/bin/rustc"
+        executable: /bin/bash
+
+    - name: Ensure Rust env for student
+      ansible.builtin.lineinfile:
+        path: "/home/{{ student_user }}/.bashrc"
+        line: "{{ item }}"
+        insertafter: EOF
+        owner: "{{ student_user }}"
+        group: "{{ student_user }}"
+        mode: "0644"
+      loop:
+        - 'export CARGO_HOME="$HOME/.cargo"'
+        - 'export RUSTUP_HOME="$HOME/.rustup"'
+        - 'export PATH="$CARGO_HOME/bin:$PATH"'
+
     # VSCODE
     - name: Download Microsoft GPG key
       ansible.builtin.get_url:

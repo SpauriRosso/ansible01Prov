@@ -8,6 +8,8 @@ vscode_extensions:
   - ms-vscode-remote.remote-containers
   - ms-azuretools.vscode-containers
   - redhat.vscode-yaml
+  - rust-lang.rust-analyzer
+  - redhat.java
 
 wifi_ssid: "CampusStMarc"
 wifi_password: "Thunderbolt"
