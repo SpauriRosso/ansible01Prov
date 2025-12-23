@@ -643,7 +643,6 @@
       failed_when: false
 
     # Plymouth
-    # Plymouth
     - name: Install Plymouth and themes
       ansible.builtin.apt:
         name:
@@ -670,16 +669,18 @@
       notify: Rebuild initramfs
 
     - name: Check current Plymouth theme
-      ansible.builtin.command: plymouth-set-default-theme
+      ansible.builtin.command: /usr/sbin/plymouth-set-default-theme
       register: current_theme
       changed_when: false
+      failed_when: false
       when: ansible_os_family == "Debian"
 
     - name: Set Plymouth default theme to spinner
-      ansible.builtin.command: plymouth-set-default-theme spinner
+      ansible.builtin.command: /usr/sbin/plymouth-set-default-theme spinner
       changed_when: true
       when:
         - ansible_os_family == "Debian"
+        - current_theme.rc == 0
         - current_theme.stdout != "spinner"
       notify: Rebuild initramfs
 
