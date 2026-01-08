@@ -660,6 +660,9 @@
           if [ "${EUID}" -ne 0 ]; then
             exec sudo /usr/local/bin/01reset "$@"
           fi
+          export ANSIBLE_LOG_PATH="/var/log/ansible.log"
+          export ANSIBLE_STDOUT_CALLBACK="yaml"
+          export ANSIBLE_FORCE_COLOR="1"
           repo_dir="/opt/ansible01Prov"
           repo_url="https://github.com/SpauriRosso/ansible01Prov.git"
           if [ ! -d "$repo_dir/.git" ]; then

@@ -21,19 +21,6 @@
       debug:
         msg: "WARNING: This will completely remove and recreate the '{{ student_user }}' user, including all data!"
 
-    - name: Terminate user sessions gracefully
-      shell: "loginctl terminate-user {{ student_user }} || true"
-      changed_when: false
-      failed_when: false
-
-    - name: Wait for processes to terminate
-      pause:
-        seconds: 3
-
-    - name: Force kill remaining processes (if any)
-      shell: "pkill -9 -u {{ student_user }} || true"
-      changed_when: false
-
     - name: Remove student user home directory
       file:
         path: "{{ student_home }}"
@@ -49,11 +36,17 @@
         path: "/var/spool/mail/{{ student_user }}"
         state: absent
 
-    - name: Remove student user
+    - name: Force remove student user (even if logged in)
+      ansible.builtin.command: "userdel -r -f {{ student_user }}"
+      changed_when: true
+      failed_when: false
+
+    - name: Ensure student user is absent
       user:
         name: "{{ student_user }}"
         state: absent
         remove: yes
+        force: yes
 
     - name: Create fresh student user
       user:
