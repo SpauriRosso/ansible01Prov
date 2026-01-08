@@ -657,6 +657,9 @@
         content: |
           #!/usr/bin/env bash
           set -euo pipefail
+          if [ "${EUID}" -ne 0 ]; then
+            exec sudo /usr/local/bin/01reset "$@"
+          fi
           repo_dir="/opt/ansible01Prov"
           repo_url="https://github.com/SpauriRosso/ansible01Prov.git"
           if [ ! -d "$repo_dir/.git" ]; then
