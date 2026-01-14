@@ -27,6 +27,13 @@
         state: present
       when: ansible_os_family == "Debian"
 
+    - name: Upgrade system
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: "dist"
+        dpkg_options: "force-confdef,force-confold"
+
+
     # Docker
     - name: Ensure apt keyrings dir exists
       ansible.builtin.file:
