@@ -579,6 +579,30 @@
         state: present
       when: ansible_os_family == "Debian"
 
+    # Dock favorites + default browser
+    - name: Pin Chrome, VSCode, GoLand, IDEA Ultimate, Discord and unpin Firefox
+      become: true
+      become_user: "{{ student_user }}"
+      ansible.builtin.shell: |
+        dbus-run-session -- \
+          gsettings set org.gnome.shell favorite-apps \
+          "['google-chrome.desktop','code.desktop','jetbrains-goland.desktop','jetbrains-idea.desktop','discord.desktop','org.gnome.Nautilus.desktop']"
+      args:
+        executable: /bin/bash
+      register: gnome_favorites
+      changed_when: gnome_favorites.rc == 0
+      failed_when: false
+      when: ansible_os_family == "Debian"
+
+    - name: Set Chrome as default browser for student
+      become: true
+      become_user: "{{ student_user }}"
+      ansible.builtin.command: xdg-settings set default-web-browser google-chrome.desktop
+      register: default_browser
+      changed_when: default_browser.rc == 0
+      failed_when: false
+      when: ansible_os_family == "Debian"
+
     # Install Node via nvm
     - name: Ensure nvm temp dir exists
       ansible.builtin.file:
