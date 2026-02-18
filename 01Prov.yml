@@ -33,7 +33,6 @@
         upgrade: "dist"
         dpkg_options: "force-confdef,force-confold"
 
-
     # Docker
     - name: Ensure apt keyrings dir exists
       ansible.builtin.file:
@@ -131,17 +130,26 @@
         validate_certs: true
       register: golang_version_resp
       changed_when: false
-      when: not golang_installed.stat.exists
+      when:
+        - not golang_installed.stat.exists
+        - golang_latest_version | default(false)
 
-    - name: Set latets golang version
+    - name: Resolve golang version to install
       ansible.builtin.set_fact:
-        golang_latest_version: "{{ golang_version_resp.content.split('\n')[0] }}"
+        golang_version_effective: >-
+          {{
+            (
+              golang_version_resp.content.split('\n')[0]
+              if (golang_latest_version | default(false))
+              else golang_version
+            ) | regex_replace('^go', '')
+          }}
       when: not golang_installed.stat.exists
 
-    - name: Download latest golang version
+    - name: Download golang version
       ansible.builtin.get_url:
-        url: "https://go.dev/dl/{{ golang_latest_version }}.linux-amd64.tar.gz"
-        dest: "/tmp/{{ golang_latest_version }}.linux-amd64.tar.gz"
+        url: "https://go.dev/dl/go{{ golang_version_effective }}.linux-amd64.tar.gz"
+        dest: "/tmp/go{{ golang_version_effective }}.linux-amd64.tar.gz"
         mode: "0644"
       when: not golang_installed.stat.exists
 
@@ -153,7 +161,7 @@
 
     - name: Extract golang archive
       ansible.builtin.unarchive:
-        src: "/tmp/{{ golang_latest_version }}.linux-amd64.tar.gz"
+        src: "/tmp/go{{ golang_version_effective }}.linux-amd64.tar.gz"
         dest: /usr/local
         remote_src: true
       when: not golang_installed.stat.exists
@@ -277,14 +285,18 @@
         - /opt/jetbrains/goland
         - /opt/jetbrains/webstorm
         - /tmp/jetbrains
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_idea | default(true) or install_jetbrains_goland | default(true) or install_jetbrains_webstorm | default(true)
 
     - name: Download JetBrains IDEA Ultimate
       ansible.builtin.get_url:
         url: https://download.jetbrains.com/product?code=IIU&latest&distribution=linux
         dest: /tmp/jetbrains/idea.tar.gz
         mode: "0644"
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_idea | default(true)
 
     - name: Extract JetBrains IDEA Ultimate
       ansible.builtin.unarchive:
@@ -295,7 +307,9 @@
           - --strip-components=1
       args:
         creates: /opt/jetbrains/idea/bin/idea.sh
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_idea | default(true)
 
     - name: Link idea CLI
       ansible.builtin.file:
@@ -303,14 +317,18 @@
         dest: /usr/local/bin/idea
         state: link
         force: true
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_idea | default(true)
 
     - name: Download JetBrains GoLand
       ansible.builtin.get_url:
         url: https://download.jetbrains.com/product?code=GO&latest&distribution=linux
         dest: /tmp/jetbrains/goland.tar.gz
         mode: "0644"
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_goland | default(true)
 
     - name: Extract JetBrains GoLand
       ansible.builtin.unarchive:
@@ -321,7 +339,9 @@
           - --strip-components=1
       args:
         creates: /opt/jetbrains/goland/bin/goland.sh
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_goland | default(true)
 
     - name: Link goland CLI
       ansible.builtin.file:
@@ -329,14 +349,18 @@
         dest: /usr/local/bin/goland
         state: link
         force: true
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_goland | default(true)
 
     - name: Download JetBrains WebStorm
       ansible.builtin.get_url:
         url: https://download.jetbrains.com/product?code=WS&latest&distribution=linux
         dest: /tmp/jetbrains/webstorm.tar.gz
         mode: "0644"
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_webstorm | default(true)
 
     - name: Extract JetBrains WebStorm
       ansible.builtin.unarchive:
@@ -347,7 +371,9 @@
           - --strip-components=1
       args:
         creates: /opt/jetbrains/webstorm/bin/webstorm.sh
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_webstorm | default(true)
 
     - name: Link webstorm CLI
       ansible.builtin.file:
@@ -355,7 +381,9 @@
         dest: /usr/local/bin/webstorm
         state: link
         force: true
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_jetbrains_webstorm | default(true)
 
     - name: Install JetBrains desktop entries
       ansible.builtin.copy:
@@ -378,19 +406,24 @@
           icon: /opt/jetbrains/idea/bin/idea.png
           wm_class: jetbrains-idea
           desktop: jetbrains-idea.desktop
+          enabled: "{{ install_jetbrains_idea | default(true) }}"
         - name: GoLand
           comment: JetBrains GoLand IDE
           exec: /opt/jetbrains/goland/bin/goland.sh
           icon: /opt/jetbrains/goland/bin/goland.png
           wm_class: jetbrains-goland
           desktop: jetbrains-goland.desktop
+          enabled: "{{ install_jetbrains_goland | default(true) }}"
         - name: WebStorm
           comment: JetBrains WebStorm IDE
           exec: /opt/jetbrains/webstorm/bin/webstorm.sh
           icon: /opt/jetbrains/webstorm/bin/webstorm.png
           wm_class: jetbrains-webstorm
           desktop: jetbrains-webstorm.desktop
-      when: ansible_os_family == "Debian"
+          enabled: "{{ install_jetbrains_webstorm | default(true) }}"
+      when:
+        - ansible_os_family == "Debian"
+        - item.enabled | bool
 
     # VSCODE
     - name: Download Microsoft GPG key
@@ -437,12 +470,15 @@
         url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         dest: /tmp/google-chrome-stable_current_amd64.deb
         mode: "0644"
+      when: install_browser | default(true)
 
     - name: Install Google Chrome
       ansible.builtin.apt:
         deb: /tmp/google-chrome-stable_current_amd64.deb
         state: present
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_browser | default(true)
 
     # Browsers customization:: Chrome
     - name: Check if Chrome managed policy exists
@@ -450,6 +486,7 @@
         path: /etc/opt/chrome/policies/managed
         state: directory
         mode: "0755"
+      when: install_browser | default(true)
 
     - name: Force install uBlock + start packages
       ansible.builtin.copy:
@@ -475,6 +512,7 @@
               "file:///usr/local/share/browser-start/browser.html"
             ]
           }
+      when: install_browser | default(true)
 
     # Browsers customization:: Firefox
     - name: Check Firefox distribution dir exists
@@ -482,6 +520,7 @@
         path: /usr/lib/firefox/distribution
         state: directory
         mode: "0755"
+      when: install_browser | default(true)
 
     - name: Force-install uBlock + start page
       ansible.builtin.copy:
@@ -506,12 +545,14 @@
               }
             }
           }
+      when: install_browser | default(true)
 
     - name: Ensure Firefox policies dir exists
       ansible.builtin.file:
         path: /etc/firefox/policies
         state: directory
         mode: "0755"
+      when: install_browser | default(true)
 
     - name: Apply Firefox policies for snap package
       ansible.builtin.copy:
@@ -536,6 +577,7 @@
               }
             }
           }
+      when: install_browser | default(true)
 
     # Browsers customization:: Both
     - name: Ensure browser start directory exists
@@ -543,41 +585,74 @@
         path: /usr/local/share/browser-start
         state: directory
         mode: "0755"
+      when: install_browser | default(true)
 
     - name: Deploy custom start page
       ansible.builtin.copy:
         src: assets/browser.html
         dest: /usr/local/share/browser-start/browser.html
         mode: "0644"
+      when: install_browser | default(true)
 
     - name: Ensure Firefox snap start directory exists
       ansible.builtin.file:
         path: /var/snap/firefox/common/browser-start
         state: directory
         mode: "0755"
+      when: install_browser | default(true)
 
     - name: Deploy custom start page for Firefox snap
       ansible.builtin.copy:
         src: assets/browser.html
         dest: /var/snap/firefox/common/browser-start/browser.html
         mode: "0644"
-
+      when: install_browser | default(true)
 
     # Discord
-    - name: Download Discord
-      ansible.builtin.get_url:
-        url: https://discord.com/api/download?platform=linux&format=deb
-        dest: /tmp/discord.deb
-        mode: "0644"
-        force: true
-      register: discord_download
-      when: ansible_os_family == "Debian"
-
-    - name: Install Discord
+    # - name: Download Discord
+    #   ansible.builtin.get_url:
+    #     url: https://discord.com/api/download?platform=linux&format=deb
+    #     dest: /tmp/discord.deb
+    #     mode: "0644"
+    #     force: true
+    #   register: discord_download
+    #   when: ansible_os_family == "Debian"
+    #
+    # - name: Install Discord
+    #   ansible.builtin.apt:
+    #     deb: /tmp/discord.deb
+    #     state: present
+    #   when: ansible_os_family == "Debian"
+    #
+    # switching to snapd version because discord don't care about linux users
+    - name: Ensure snapd is installed
       ansible.builtin.apt:
-        deb: /tmp/discord.deb
+        name: snapd
         state: present
-      when: ansible_os_family == "Debian"
+        update_cache: true
+      when:
+        - ansible_os_family == "Debian"
+        - install_discord | default(true)
+        - discord_use_snap | default(true)
+
+    - name: Install Discord via snap
+      ansible.builtin.command: snap install discord
+      register: discord_snap_install
+      changed_when: "'discord' in discord_snap_install.stdout"
+      failed_when: false
+      when:
+        - ansible_os_family == "Debian"
+        - install_discord | default(true)
+        - discord_use_snap | default(true)
+
+    - name: Ensure Discord snap is present if already installed
+      ansible.builtin.command: snap refresh discord
+      changed_when: false
+      failed_when: false
+      when:
+        - ansible_os_family == "Debian"
+        - install_discord | default(true)
+        - discord_use_snap | default(true)
 
     # Dock favorites + default browser
     - name: Pin Chrome, VSCode, GoLand, IDEA Ultimate, Discord and unpin Firefox
@@ -592,7 +667,9 @@
       register: gnome_favorites
       changed_when: gnome_favorites.rc == 0
       failed_when: false
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_browser | default(true)
 
     - name: Set Chrome as default browser for student
       become: true
@@ -601,7 +678,9 @@
       register: default_browser
       changed_when: default_browser.rc == 0
       failed_when: false
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - install_browser | default(true)
 
     # Install Node via nvm
     - name: Ensure nvm temp dir exists
@@ -609,12 +688,14 @@
         path: /tmp/nvm
         state: directory
         mode: "0755"
+      when: install_nvm | default(true)
 
     - name: Download nvm script
       ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh
         dest: /tmp/nvm/install.sh
         mode: "0644"
+      when: install_nvm | default(true)
 
     - name: Install nvm
       become: true
@@ -625,6 +706,7 @@
         bash /tmp/nvm/install.sh
       args:
         creates: "/home/{{ student_user }}/.nvm/nvm.sh"
+      when: install_nvm | default(true)
 
     - name: Ensure nvm is loaded in bashrc
       ansible.builtin.lineinfile:
@@ -634,6 +716,7 @@
         owner: "{{ student_user }}"
         group: "{{ student_user }}"
         mode: "0644"
+      when: install_nvm | default(true)
 
     - name: Install Node LTS via nvm
       become: true
@@ -641,10 +724,11 @@
       ansible.builtin.shell: |
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        nvm install --lts
-        nvm alias default 'lts/*'
+        nvm install {{ nvm_verion }}
+        nvm alias default '{{ nvm_verion }}'
       args:
         creates: "/home/{{ student_user }}/.nvm/alias"
+      when: install_nvm | default(true)
 
     # @conotion/cli
     - name: Install @conotion/cli globally
@@ -658,6 +742,9 @@
       args:
         executable: /bin/bash
       changed_when: true
+      when:
+        - install_nvm | default(true)
+        - install_conotion | default(true)
 
     # Plymouth
     - name: Install Plymouth and themes
@@ -666,14 +753,18 @@
           - plymouth
           - plymouth-themes
         state: present
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
 
     - name: Ensure Plymouth spinner theme directory exists
       ansible.builtin.file:
         path: /usr/share/plymouth/themes/spinner
         state: directory
-        mode: '0755'
-      when: ansible_os_family == "Debian"
+        mode: "0755"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
 
     - name: Deploy custom 01Rouen logo to Spinner theme
       ansible.builtin.copy:
@@ -682,7 +773,9 @@
         owner: root
         group: root
         mode: "0644"
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
 
     - name: Deploy custom 01Rouen logo to legacy ubuntu-logo path
       ansible.builtin.copy:
@@ -691,27 +784,34 @@
         owner: root
         group: root
         mode: "0644"
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
 
     - name: Check current Plymouth theme
       ansible.builtin.command: /usr/sbin/plymouth-set-default-theme
       register: current_theme
       changed_when: false
       failed_when: false
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
 
     - name: Set Plymouth default theme to spinner
       ansible.builtin.command: /usr/sbin/plymouth-set-default-theme spinner
       changed_when: true
       when:
         - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
         - current_theme.rc == 0
         - current_theme.stdout != "spinner"
 
     - name: Force Rebuild initramfs (Always)
       ansible.builtin.command: update-initramfs -u
       changed_when: true
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
 
     # 01reset system-wide command
     - name: Install 01reset command
@@ -724,7 +824,7 @@
           #!/usr/bin/env bash
           set -euo pipefail
           if [ "${EUID}" -ne 0 ]; then
-            exec sudo /usr/local/bin/01reset "$@"
+            exec sudo -k /usr/local/bin/01reset "$@"
           fi
           export ANSIBLE_LOG_PATH="/var/log/ansible.log"
           export ANSIBLE_STDOUT_CALLBACK="yaml"
@@ -736,15 +836,15 @@
           fi
           cd "$repo_dir"
           git pull --ff-only
-          exec ansible-playbook -i inventory 01Reset.yml
+          exec ansible-playbook -i inventory 01Reset.yml {{ reset_playbook_verbosity | default('-vv') }}
 
-    - name: Allow student to run 01reset via sudo
+    - name: Require sudo password for 01reset command
       ansible.builtin.copy:
         dest: /etc/sudoers.d/01reset
         owner: root
         group: root
         mode: "0440"
-        content: "{{ student_user }} ALL=(root) NOPASSWD: /usr/local/bin/01reset\n"
+        content: "{{ student_user }} ALL=(root) PASSWD: /usr/local/bin/01reset\n"
         validate: /usr/sbin/visudo -cf %s
 
     # Wifi Configuration
@@ -801,8 +901,9 @@
       ansible.builtin.debug:
         msg: " Provisioning complete! "
 
-    - name: Shutdown
-      community.general.shutdown:
+    # Commented out because shutdown doesn't work on localhost
+    #- name: Shutdown
+    #  community.general.shutdown:
 
   # Handlers
   # handlers:
