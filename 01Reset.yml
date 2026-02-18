@@ -2,11 +2,10 @@
 - name: Reset user student
   hosts: localhost
   become: yes
+  vars_files:
+    - ./vars.yml
   vars:
-    student_user: "student"
     student_home: "/home/{{ student_user }}"
-    repo_dir: "/opt/ansible01Prov"
-    repo_url: "https://github.com/SpauriRosso/ansible01Prov.git"
 
   tasks:
     - name: Ensure provisioning repo is up to date
@@ -59,7 +58,7 @@
     - name: Set password for student
       user:
         name: "{{ student_user }}"
-        password: "{{ 'Zone01pc' | password_hash('sha512') }}"
+        password: "{{ student_passwd_hash }}"
         update_password: always
 
     - name: Create standard directories for student
