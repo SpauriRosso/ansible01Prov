@@ -1,5 +1,9 @@
 ---
-golang_version: "1.25.5"
+# Choose between fixed version or latest version
+# By putting latest version to true, golang version will be ommitted
+# And install latest golang version available on https://go.dev
+golang_latest_version: true
+golang_version: "1.26.0"
 
 vscode_extensions:
   - golang.go
@@ -18,8 +22,18 @@ student_passwd_hash: "$6$dsglRezy0hkaPkox$ncxtOfrht4au.m41IY/hyTAA25pzsvvRZfZNiq
 
 install_docker: true
 install_conotion: true
+install_jetbrains_goland: true
+install_jetbrains_webstorm: true
+install_jetbrains_idea: true
+install_discord: true
+discord_use_snap: true
+
 install_browser: true
 install_nvm: true
 nvm_verion: "lts"
 
 change_bootscreen: true
+
+reset_playbook_verbosity: "-vv"
+repo_dir: "/opt/ansible01Prov"
+repo_url: "https://github.com/SpauriRosso/ansible01Prov.git"
