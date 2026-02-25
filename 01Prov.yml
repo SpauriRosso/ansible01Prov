@@ -136,14 +136,9 @@
 
     - name: Resolve golang version to install
       ansible.builtin.set_fact:
-        golang_version_effective: >-
-          {{
-            (
-              golang_version_resp.content.split('\n')[0]
-              if (golang_latest_version | default(false))
-              else golang_version
-            ) | regex_replace('^go', '')
-          }}
+        golang_version_effective: "{{ golang_version_source | regex_replace('^go', '') | regex_replace('\\s.*$', '') }}"
+      vars:
+        golang_version_source: "{{ (golang_version_resp.content | trim) if (golang_latest_version | default(false)) else ('go' ~ golang_version) }}"
       when: not golang_installed.stat.exists
 
     - name: Download golang version
