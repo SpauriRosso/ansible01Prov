@@ -717,12 +717,13 @@
       become: true
       become_user: "{{ student_user }}"
       ansible.builtin.shell: |
+        set -euo pipefail
         export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        nvm install {{ nvm_verion }}
-        nvm alias default '{{ nvm_verion }}'
+        . "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm alias default 'lts/*'
       args:
-        creates: "/home/{{ student_user }}/.nvm/alias"
+        executable: /bin/bash
       when: install_nvm | default(true)
 
     # @conotion/cli

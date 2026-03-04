@@ -30,7 +30,6 @@ discord_use_snap: true
 
 install_browser: true
 install_nvm: true
-nvm_verion: "lts"
 
 change_bootscreen: true
 

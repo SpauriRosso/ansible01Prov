@@ -90,7 +90,6 @@ Les valeurs par defaut sont dans `vars.yml`. Vous pouvez les surcharger via `--e
 - `install_jetbrains_idea` - Active IDEA Ultimate
 - `install_jetbrains_goland` - Active GoLand
 - `install_jetbrains_webstorm` - Active WebStorm
-- `nvm_verion` - Version/alias Node pour `nvm install` (ex: `lts`)
 - `install_discord` - Active l'installation de Discord
 - `discord_use_snap` - Utilise la version snap de Discord
 - `reset_playbook_verbosity` - Verbosite utilisee par la commande `01reset`
