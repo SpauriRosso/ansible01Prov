@@ -3,259 +3,562 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start - Zone01</title>
+    <title>Zone01</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+    
     <style>
-        /* --- VARIABLES --- */
-        :root {
-            /* Fond en verre légèrement plus sombre pour ce wallpaper clair */
-            --glass-bg: rgba(20, 20, 20, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-hover: rgba(255, 255, 255, 0.2);
-            --text-color: #ffffff;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            outline: none;
+            font-family: 'Outfit', sans-serif;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            color: var(--text-color);
-            
-            /* --- NOUVEAU WALLPAPER IMGUR --- */
-            /* Utilisation du lien direct (.jpeg) et non du lien d'album */
-            background: url('https://i.imgur.com/WFMtScn.png') no-repeat center center fixed;
+            align-items: center;
+            background-color: #0f172a; 
             background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            overflow: hidden;
+            position: relative;
+            color: #fff;
+            /* Transition plus douce pour l'apparition du fond */
+            transition: background-image 0.8s ease-in-out; 
         }
 
-        /* Voile sombre léger pour la lisibilité */
-        body::before {
+        /* PLUS DE VIGNETTAGE : Centre clair, bords sombres retirés */
+
+        /* --- LE VRAI GLASSMORPHISM (Renforcé pour lisibilité sans vignettage) --- */
+        .true-glass {
+            background: rgba(255, 255, 255, 0.07); /* Opacité légèrement augmentée */
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); /* Ombre plus douce */
+        }
+
+        /* --- WIDGET METEO (Haut Gauche) --- */
+        .weather-widget {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            padding: 12px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+            opacity: 0; 
+        }
+
+        .weather-temp {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -1px;
+        }
+
+        .weather-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .weather-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: capitalize;
+            margin-bottom: 2px;
+        }
+
+        .city-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+            width: 90px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding-bottom: 1px;
+        }
+
+        .city-input:focus {
+            border-bottom: 1px solid #fff;
+            width: 130px;
+            cursor: text;
+        }
+
+        /* --- CONTENEUR PRINCIPAL --- */
+        .container {
+            display: flex;
+            gap: 220px; 
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 1350px;
+            padding: 20px;
+            z-index: 1;
+            margin-bottom: 60px;
+        }
+
+        /* --- PARTIE GAUCHE (Accueil + Recherche) --- */
+        .left-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            max-width: 420px;
+            opacity: 0;
+        }
+
+        .greeting {
+            margin-bottom: 25px;
+            padding-left: 10px;
+        }
+
+        .greeting h1 {
+            font-size: 2.8rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 5px;
+            color: #ffffff;
+            /* Ombre portée pour détacher le texte du fond sans vignettage */
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: color 0.3s ease;
+        }
+        
+        /* Message de bienvenue vivant au survol */
+        .left-section:hover .greeting h1 {
+            color: #a5b4fc;
+        }
+
+        .greeting p {
+            font-size: 1.15rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-bar {
+            width: 100%;
+            height: 56px;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-bar:focus-within {
+            background: rgba(255, 255, 255, 0.12);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255,255,255,0.08);
+            transform: translateY(-2px);
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 400;
+            flex: 1;
+            letter-spacing: 0.3px;
+        }
+
+        .search-bar input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-bar button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 15px;
+        }
+
+        .search-bar svg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.8);
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.3s;
+        }
+        
+        .search-bar button:hover svg {
+            stroke: #fff;
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        /* --- SITES (Droite) --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .card {
+            width: 220px;
+            height: 145px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        /* Effet de lueur pulsante discrète pour un look 'vivant' au survol */
+        .card:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .card-img-container {
+            width: 100%;
+            height: 100px;
+            overflow: hidden;
+            background: #111; 
+            position: relative;
+        }
+
+        .card-img-container::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.2); 
-            z-index: -1;
+            background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6) 100%);
+            z-index: 1;
         }
 
-        /* --- ANIMATION --- */
-        .fade-in {
-            animation: fadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- CONTAINER --- */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            gap: 50px;
+        .card-img {
             width: 100%;
-            max-width: 650px;
-            align-items: center;
-            z-index: 10;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            opacity: 0.85;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
         }
 
-        /* --- SEARCH BAR --- */
-        .search-container {
-            width: 100%;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
-            padding: 6px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        .card:hover .card-img {
+            opacity: 1;
+            transform: scale(1.08);
         }
 
-        .search-container:hover, .search-container:focus-within {
-            background: rgba(40, 40, 40, 0.5);
-            border-color: rgba(255,255,255,0.3);
-            transform: scale(1.01);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-        }
-
-        .search-form {
+        .card-title-wrapper {
+            flex: 1;
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            height: 55px;
-        }
-
-        .search-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 1.1rem;
-            margin-left: 15px;
-            font-weight: 300;
-        }
-        
-        .search-input::placeholder { color: rgba(255, 255, 255, 0.5); }
-
-        .search-icon {
-            color: rgba(255, 255, 255, 0.7);
-            width: 22px;
-            height: 22px;
-        }
-
-        /* --- BOOKMARKS --- */
-        .bookmarks-grid {
-            display: flex;
             justify-content: center;
-            flex-wrap: wrap;
-            gap: 35px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 2;
         }
 
-        .bookmark-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: white;
-            transition: transform 0.3s ease;
-        }
-
-        .bookmark-item:hover {
-            transform: translateY(-6px);
-        }
-
-        .bookmark-icon-box {
-            width: 72px;
-            height: 72px;
-            border-radius: 22px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .bookmark-item:hover .bookmark-icon-box {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .bookmark-icon-box img {
-            width: 34px;
-            height: 34px;
-            border-radius: 6px;
-        }
-
-        .bookmark-name {
-            font-size: 0.85rem;
-            font-weight: 300; /* Light */
-            opacity: 0.9;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        .card-title {
+            color: #e2e8f0;
+            font-size: 13px;
+            font-weight: 500;
             letter-spacing: 0.5px;
+            transition: color 0.3s;
         }
 
-        /* --- LOGO FOOTER --- */
-        .footer-logo {
+        .card:hover .card-title {
+            color: #ffffff;
+        }
+
+        /* Reflet premium au hover */
+        .card::before {
+            content: '';
             position: absolute;
-            bottom: 30px;
-            animation: fadeInLogo 1.5s ease forwards;
-            opacity: 0;
-        }
-        
-        @keyframes fadeInLogo {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent);
+            transform: skewX(-20deg);
+            transition: all 0.7s ease;
+            z-index: 3;
+            pointer-events: none;
         }
 
-        .footer-logo img {
-            display: block;
+        .card:hover::before {
+            left: 150%;
+        }
+
+        /* --- ILLUSTRATION BAS DU CENTRE --- */
+        .bottom-illustration {
+            position: fixed;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
             width: 160px;
-            height: auto;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.9;
         }
 
+        .bottom-illustration img {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 -5px 25px rgba(0,0,0,0.4));
+        }
+
+        @media (max-width: 1000px) {
+            .container {
+                flex-direction: column;
+                gap: 50px;
+                margin-bottom: 80px;
+            }
+            .left-section {
+                align-items: center;
+                text-align: center;
+                padding: 0 20px;
+            }
+            .greeting {
+                padding-left: 0;
+            }
+            .weather-widget {
+                top: 20px;
+                left: 20px;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="main-container fade-in">
-        
-        <div class="search-container">
-            <form action="https://www.google.com/search" method="GET" class="search-form">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" name="q" class="search-input" placeholder="Search..." autocomplete="off" autofocus>
+    <div class="weather-widget true-glass">
+        <div class="weather-temp" id="weather-temp">--°</div>
+        <div class="weather-details">
+            <span class="weather-desc" id="weather-desc">Chargement...</span>
+            <input type="text" class="city-input" id="city-input" value="Rouen" title="Entrez une ville et tapez Entrée">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left-section">
+            <div class="greeting">
+                <h1 id="dynamic-greeting">Bonjour</h1>
+                <p id="dynamic-subtext">Que fait-on aujourd'hui ?</p>
+            </div>
+            
+            <form action="https://www.google.com/search" method="GET" target="_blank" class="true-glass search-bar">
+                <input type="text" name="q" placeholder="Rechercher sur le web..." autocomplete="off">
+                <button type="submit">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
             </form>
         </div>
 
-        <div class="bookmarks-grid" id="bookmarks-container">
-            </div>
-
+        <div class="grid">
+            <a href="https://zone01normandie.org" target="_blank" rel="noopener noreferrer" class="true-glass card">
+                <div class="card-img-container"><img class="card-img" src="https://image.thum.io/get/width/400/crop/600/https://zone01normandie.org" alt="Plateforme"></div>
+                <div class="card-title-wrapper"><span class="card-title">Plateforme (Galaxy)</span></div>
+            </a>
+            <a href="https://emargement.zone01normandie.org/" target="_blank" rel="noopener noreferrer" class="true-glass card">
+                <div class="card-img-container"><img class="card-img" src="https://image.thum.io/get/width/400/crop/600/https://emargement.zone01normandie.org/" alt="Emargement"></div>
+                <div class="card-title-wrapper"><span class="card-title">Emargement</span></div>
+            </a>
+            <a href="https://discord.com/invite/2sjsk9sQvW" target="_blank" rel="noopener noreferrer" class="true-glass card">
+                <div class="card-img-container"><img class="card-img" src="https://image.thum.io/get/width/400/crop/600/https://discord.com" alt="Discord"></div>
+                <div class="card-title-wrapper"><span class="card-title">Discord</span></div>
+            </a>
+            <a href="https://zone01normandie.org/" target="_blank" rel="noopener noreferrer" class="true-glass card">
+                <div class="card-img-container"><img class="card-img" src="https://image.thum.io/get/width/400/crop/600/https://zone01normandie.org/" alt="Gitea"></div>
+                <div class="card-title-wrapper"><span class="card-title">Gitea</span></div>
+            </a>
+            <a href="https://conotion.ai" target="_blank" rel="noopener noreferrer" class="true-glass card">
+                <div class="card-img-container"><img class="card-img" src="https://image.thum.io/get/width/400/crop/600/https://conotion.ai" alt="Conotion"></div>
+                <div class="card-title-wrapper"><span class="card-title">Conotion</span></div>
+            </a>
+            <a href="https://go.dev/tour/welcome/1" target="_blank" rel="noopener noreferrer" class="true-glass card">
+                <div class="card-img-container"><img class="card-img" src="https://image.thum.io/get/width/400/crop/600/https://go.dev/tour/welcome/1" alt="Go"></div>
+                <div class="card-title-wrapper"><span class="card-title">Tutoriel Golang</span></div>
+            </a>
+        </div>
     </div>
 
-    <div class="footer-logo">
-        <img src="https://zone01rouennormandie.org/wp-content/uploads/2022/10/ZONE01-ROUEN-NORMANDIE-FOND-BLANC-T-SHIRT.png" alt="Zone01 Logo">
+    <div class="bottom-illustration">
+        <img src="https://i.imgur.com/JLGgfs5.png" alt="Illustration">
     </div>
 
     <script>
-        const bookmarksData = [
-            { name: "Plateforme", url: "https://zone01normandie.org" },
-            { name: "Emargement", url: "https://emargement.zone01normandie.org/" },
-            { name: "Discord",    url: "https://discord.gg/2sjsk9sQvW" },
-            { name: "Gitea",      url: "https://zone01normandie.org/git/user/login" },
-            { name: "Conotion",   url: "https://conotion.ai" }
-        ];
-
-        function renderBookmarks() {
-            const container = document.getElementById('bookmarks-container');
+        document.addEventListener('DOMContentLoaded', () => {
             
-            bookmarksData.forEach((site, index) => {
-                const item = document.createElement('a');
-                item.href = site.url;
-                item.className = 'bookmark-item';
-                // Animation en cascade
-                item.style.animation = `fadeIn 0.6s ease forwards ${index * 0.1}s`;
-                item.style.opacity = '0';
+            // --- 1. GESTION DU FOND D'ÉCRAN PICSUM AVEC CACHE (30 MIN) ---
+            const CACHE_KEY = 'dashboard_bg_url';
+            const TIME_KEY = 'dashboard_bg_time';
+            const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+            
+            const now = Date.now();
+            const savedTime = localStorage.getItem(TIME_KEY);
+            const savedUrl = localStorage.getItem(CACHE_KEY);
+            
+            let finalBgUrl;
 
-                const iconBox = document.createElement('div');
-                iconBox.className = 'bookmark-icon-box';
+            if (savedUrl && savedTime && (now - parseInt(savedTime)) < CACHE_DURATION) {
+                finalBgUrl = savedUrl;
+            } else {
+                // IMPORTANT : J'utilise Picsum, sans le vignettage CSS, mais avec un léger flou pour la profondeur de champ
+                finalBgUrl = `https://picsum.photos/1920/1080?random=${now}&blur=1`;
+                localStorage.setItem(CACHE_KEY, finalBgUrl);
+                localStorage.setItem(TIME_KEY, now.toString());
+            }
+            
+            document.body.style.backgroundImage = `url('${finalBgUrl}')`;
+
+            // --- 2. MESSAGE DE BIENVENUE DYNAMIQUE ---
+            function updateGreeting() {
+                const hour = new Date().getHours();
+                const titleEl = document.getElementById('dynamic-greeting');
+                const subEl = document.getElementById('dynamic-subtext');
                 
-                // Récupération Favicon
-                const faviconUrl = `https://www.google.com/s2/favicons?sz=128&domain_url=${site.url}`;
-                const img = document.createElement('img');
-                img.src = faviconUrl;
-                img.alt = site.name;
+                let titles = [], subtitles = [];
 
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'bookmark-name';
-                nameSpan.textContent = site.name;
+                if (hour >= 5 && hour < 12) {
+                    titles = ["Bonjour !", "Bon matin !", "Prêt à coder ?"];
+                    subtitles = ["Une belle journée commence.", "C'est l'heure du premier café ☕", "Où allons-nous ce matin ?"];
+                } else if (hour >= 12 && hour < 18) {
+                    titles = ["Bon après-midi !", "Salut !", "En pleine forme ?"];
+                    subtitles = ["On continue sur cette lancée ?", "Un petit tour sur le web ?", "Que cherche-t-on cet après-midi ?"];
+                } else if (hour >= 18 && hour < 23) {
+                    titles = ["Bonsoir !", "Bonne soirée !", "Toujours là ?"];
+                    subtitles = ["La nuit porte conseil.", "Un dernier push avant de couper ?", "Ambiance nocturne activée 🌙"];
+                } else {
+                    titles = ["Il se fait tard...", "Oiseau de nuit ?", "Toujours éveillé ?"];
+                    subtitles = ["N'oublie pas de te reposer.", "Le code ne dort jamais.", "Une petite recherche nocturne ?"];
+                }
 
-                iconBox.appendChild(img);
-                item.appendChild(iconBox);
-                item.appendChild(nameSpan);
-                container.appendChild(item);
+                titleEl.textContent = titles[Math.floor(Math.random() * titles.length)];
+                subEl.textContent = subtitles[Math.floor(Math.random() * subtitles.length)];
+            }
+            updateGreeting();
+
+            // --- 3. MÉTÉO ÉPURÉE ---
+            const cityInput = document.getElementById('city-input');
+            const tempEl = document.getElementById('weather-temp');
+            const descEl = document.getElementById('weather-desc');
+            let savedCity = localStorage.getItem('userCity') || 'Rouen';
+            cityInput.value = savedCity;
+
+            const weatherCodes = {
+                0: "Ciel clair", 1: "Peu nuageux", 2: "Nuageux", 3: "Couvert",
+                45: "Brouillard", 48: "Brouillard givrant",
+                51: "Bruine légère", 53: "Bruine", 55: "Bruine forte",
+                61: "Pluie faible", 63: "Pluie", 65: "Pluie forte",
+                71: "Quelques flocons", 73: "Neige", 75: "Forte neige",
+                95: "Orage", 96: "Orage et grêle", 99: "Orage fort"
+            };
+
+            async function getCityCoordinates(cityName) {
+                try {
+                    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=fr`);
+                    const data = await res.json();
+                    if(data.results && data.results.length > 0) {
+                        return { lat: data.results[0].latitude, lon: data.results[0].longitude, name: data.results[0].name };
+                    }
+                    return null;
+                } catch(e) { return null; }
+            }
+
+            async function fetchWeather(lat, lon, cityName) {
+                try {
+                    descEl.textContent = "Recherche...";
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                    const data = await res.json();
+                    const code = data.current_weather.weathercode;
+                    
+                    tempEl.textContent = `${Math.round(data.current_weather.temperature)}°`;
+                    descEl.textContent = weatherCodes[code] || "Inconnu";
+                    cityInput.value = cityName;
+                    localStorage.setItem('userCity', cityName);
+                } catch (e) {
+                    descEl.textContent = "Erreur de connexion";
+                }
+            }
+
+            cityInput.addEventListener('keypress', async (e) => {
+                if(e.key === 'Enter') {
+                    cityInput.blur();
+                    const inputVal = cityInput.value.trim();
+                    if(inputVal) {
+                        const coords = await getCityCoordinates(inputVal);
+                        if(coords) fetchWeather(coords.lat, coords.lon, coords.name);
+                        else {
+                            descEl.textContent = "Ville introuvable";
+                            setTimeout(() => { cityInput.value = localStorage.getItem('userCity') || 'Rouen'; }, 2000);
+                        }
+                    }
+                }
             });
-        }
 
-        renderBookmarks();
+            getCityCoordinates(savedCity).then(coords => {
+                if(coords) fetchWeather(coords.lat, coords.lon, coords.name);
+            });
+
+            // --- 4. ANIMATIONS D'ENTRÉE ET HOVER (ANIME.JS) ---
+            anime({
+                targets: ['.weather-widget', '.left-section'],
+                translateX: [-40, 0],
+                opacity: [0, 1],
+                duration: 1200,
+                easing: 'easeOutQuart',
+                delay: anime.stagger(150)
+            });
+
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    anime.remove(card);
+                    // Effet de lueur discrète géré par Anime.js pour la fluidité
+                    anime({
+                        targets: card,
+                        scale: 1.04,
+                        translateY: -5,
+                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        duration: 350,
+                        easing: 'easeOutCubic'
+                    });
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    anime.remove(card);
+                    anime({
+                        targets: card,
+                        scale: 1,
+                        translateY: 0,
+                        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.3)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        duration: 500,
+                        easing: 'easeOutCubic'
+                    });
+                });
+            });
+        });
     </script>
 </body>
 </html>
