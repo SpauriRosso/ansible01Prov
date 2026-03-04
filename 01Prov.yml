@@ -308,7 +308,7 @@
 
     - name: Link idea CLI
       ansible.builtin.file:
-        src: /opt/jetbrains/idea/bin/idea.sh
+        src: /opt/jetbrains/idea/bin/idea
         dest: /usr/local/bin/idea
         state: link
         force: true
@@ -372,7 +372,7 @@
 
     - name: Link webstorm CLI
       ansible.builtin.file:
-        src: /opt/jetbrains/webstorm/bin/webstorm.sh
+        src: /opt/jetbrains/webstorm/bin/webstorm
         dest: /usr/local/bin/webstorm
         state: link
         force: true
@@ -397,7 +397,7 @@
       loop:
         - name: IntelliJ IDEA Ultimate
           comment: JetBrains IntelliJ IDEA Ultimate
-          exec: /opt/jetbrains/idea/bin/idea.sh
+          exec: /opt/jetbrains/idea/bin/idea
           icon: /opt/jetbrains/idea/bin/idea.png
           wm_class: jetbrains-idea
           desktop: jetbrains-idea.desktop
@@ -411,7 +411,7 @@
           enabled: "{{ install_jetbrains_goland | default(true) }}"
         - name: WebStorm
           comment: JetBrains WebStorm IDE
-          exec: /opt/jetbrains/webstorm/bin/webstorm.sh
+          exec: /opt/jetbrains/webstorm/bin/webstorm
           icon: /opt/jetbrains/webstorm/bin/webstorm.png
           wm_class: jetbrains-webstorm
           desktop: jetbrains-webstorm.desktop
@@ -650,13 +650,13 @@
         - discord_use_snap | default(true)
 
     # Dock favorites + default browser
-    - name: Pin Chrome, VSCode, GoLand, IDEA Ultimate, Discord and unpin Firefox
+    - name: Pin Chrome, VSCode, GoLand, IDEA Ultimate, WebStorm, Discord and unpin Firefox
       become: true
       become_user: "{{ student_user }}"
       ansible.builtin.shell: |
         dbus-run-session -- \
           gsettings set org.gnome.shell favorite-apps \
-          "['google-chrome.desktop','code.desktop','jetbrains-goland.desktop','jetbrains-idea.desktop','discord.desktop','org.gnome.Nautilus.desktop']"
+          "['google-chrome.desktop','code.desktop','jetbrains-goland.desktop','jetbrains-idea.desktop','jetbrains-webstorm.desktop','discord_discord.desktop','org.gnome.Nautilus.desktop']"
       args:
         executable: /bin/bash
       register: gnome_favorites
