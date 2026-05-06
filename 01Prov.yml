@@ -787,6 +787,86 @@
         - ansible_os_family == "Debian"
         - change_bootscreen | default(true)
 
+    - name: Install GDM branding dependencies
+      ansible.builtin.apt:
+        name:
+          - dconf-cli
+        state: present
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+
+    - name: Ensure greeter logo directory exists
+      ansible.builtin.file:
+        path: /usr/share/pixmaps/01rouen
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+
+    - name: Deploy custom 01Rouen logo for GDM greeter
+      ansible.builtin.copy:
+        src: assets/01logo.png
+        dest: /usr/share/pixmaps/01rouen/greeter-logo.png
+        owner: root
+        group: root
+        mode: "0644"
+      register: gdm_logo_copy
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+
+    - name: Ensure GDM dconf profile exists
+      ansible.builtin.copy:
+        dest: /etc/dconf/profile/gdm
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          user-db:user
+          system-db:gdm
+          file-db:/usr/share/gdm/greeter-dconf-defaults
+      register: gdm_profile
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+
+    - name: Ensure GDM dconf database directory exists
+      ansible.builtin.file:
+        path: /etc/dconf/db/gdm.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+
+    - name: Configure custom logo for GDM login screen
+      ansible.builtin.copy:
+        dest: /etc/dconf/db/gdm.d/01-01rouen-logo
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [org/gnome/login-screen]
+          logo='/usr/share/pixmaps/01rouen/greeter-logo.png'
+      register: gdm_logo_config
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+
+    - name: Update dconf database for GDM branding
+      ansible.builtin.command: dconf update
+      changed_when: true
+      when:
+        - ansible_os_family == "Debian"
+        - change_bootscreen | default(true)
+        - gdm_logo_copy is changed or gdm_profile is changed or gdm_logo_config is changed
+
     - name: Check current Plymouth theme
       ansible.builtin.command: /usr/sbin/plymouth-set-default-theme
       register: current_theme
