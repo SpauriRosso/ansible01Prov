@@ -20,7 +20,27 @@
       debug:
         msg: "WARNING: This will completely remove and recreate the '{{ student_user }}' user, including all data!"
 
-    - name: Remove student user home directory
+    - name: Force remove student user (even if logged in)
+      ansible.builtin.command: "userdel -r -f {{ student_user }}"
+      changed_when: true
+      failed_when: false
+
+    - name: Ensure student user is absent
+      user:
+        name: "{{ student_user }}"
+        state: absent
+        remove: yes
+        force: yes
+
+    - name: Remove student user home directory if it still exists
+      ansible.builtin.shell: |
+        rm -rf --one-file-system "{{ student_home }}"
+      args:
+        executable: /bin/bash
+      changed_when: true
+      failed_when: false
+
+    - name: Ensure student user home directory is absent
       file:
         path: "{{ student_home }}"
         state: absent
@@ -34,18 +54,6 @@
       file:
         path: "/var/spool/mail/{{ student_user }}"
         state: absent
-
-    - name: Force remove student user (even if logged in)
-      ansible.builtin.command: "userdel -r -f {{ student_user }}"
-      changed_when: true
-      failed_when: false
-
-    - name: Ensure student user is absent
-      user:
-        name: "{{ student_user }}"
-        state: absent
-        remove: yes
-        force: yes
 
     - name: Create fresh student user
       user:

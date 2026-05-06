@@ -905,7 +905,7 @@
           if [ "${EUID}" -ne 0 ]; then
             exec sudo -k /usr/local/bin/01reset "$@"
           fi
-          export ANSIBLE_LOG_PATH="/var/log/ansible.log"
+          export ANSIBLE_LOG_PATH="/var/log/ansible-reset.log"
           export ANSIBLE_STDOUT_CALLBACK="default"
           export ANSIBLE_CALLBACK_RESULT_FORMAT="yaml"
           export ANSIBLE_FORCE_COLOR="1"
