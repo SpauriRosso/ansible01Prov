@@ -4,6 +4,8 @@
   become: true
   vars_files:
     - ./vars.yml
+  vars:
+    jetbrains_download_dir: /var/tmp/jetbrains
 
   # APT Packages
   tasks:
@@ -279,7 +281,7 @@
         - /opt/jetbrains/idea
         - /opt/jetbrains/goland
         - /opt/jetbrains/webstorm
-        - /tmp/jetbrains
+        - "{{ jetbrains_download_dir }}"
       when:
         - ansible_os_family == "Debian"
         - install_jetbrains_idea | default(true) or install_jetbrains_goland | default(true) or install_jetbrains_webstorm | default(true)
@@ -287,7 +289,8 @@
     - name: Download JetBrains IDEA Ultimate
       ansible.builtin.get_url:
         url: https://download.jetbrains.com/product?code=IIU&latest&distribution=linux
-        dest: /tmp/jetbrains/idea.tar.gz
+        dest: "{{ jetbrains_download_dir }}/idea.tar.gz"
+        tmp_dest: "{{ jetbrains_download_dir }}"
         mode: "0644"
         timeout: 30
       when:
@@ -296,7 +299,7 @@
 
     - name: Extract JetBrains IDEA Ultimate
       ansible.builtin.unarchive:
-        src: /tmp/jetbrains/idea.tar.gz
+        src: "{{ jetbrains_download_dir }}/idea.tar.gz"
         dest: /opt/jetbrains/idea
         remote_src: true
         extra_opts:
@@ -320,7 +323,8 @@
     - name: Download JetBrains GoLand
       ansible.builtin.get_url:
         url: https://download.jetbrains.com/product?code=GO&latest&distribution=linux
-        dest: /tmp/jetbrains/goland.tar.gz
+        dest: "{{ jetbrains_download_dir }}/goland.tar.gz"
+        tmp_dest: "{{ jetbrains_download_dir }}"
         mode: "0644"
         timeout: 30
       when:
@@ -329,7 +333,7 @@
 
     - name: Extract JetBrains GoLand
       ansible.builtin.unarchive:
-        src: /tmp/jetbrains/goland.tar.gz
+        src: "{{ jetbrains_download_dir }}/goland.tar.gz"
         dest: /opt/jetbrains/goland
         remote_src: true
         extra_opts:
@@ -353,7 +357,8 @@
     - name: Download JetBrains WebStorm
       ansible.builtin.get_url:
         url: https://download.jetbrains.com/product?code=WS&latest&distribution=linux
-        dest: /tmp/jetbrains/webstorm.tar.gz
+        dest: "{{ jetbrains_download_dir }}/webstorm.tar.gz"
+        tmp_dest: "{{ jetbrains_download_dir }}"
         mode: "0644"
         timeout: 30
       when:
@@ -362,7 +367,7 @@
 
     - name: Extract JetBrains WebStorm
       ansible.builtin.unarchive:
-        src: /tmp/jetbrains/webstorm.tar.gz
+        src: "{{ jetbrains_download_dir }}/webstorm.tar.gz"
         dest: /opt/jetbrains/webstorm
         remote_src: true
         extra_opts:
